@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Bus = sequelize.define('bus', {
-    id: { type: DataTypes.UUID, primaryKey: true },
+    id: { type: DataTypes.UUID, primaryKey: true,defaultValue: DataTypes.UUIDV4 },
     placa: DataTypes.STRING,
     imagen: DataTypes.STRING,
     descripcion: DataTypes.STRING,

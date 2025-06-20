@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Ruta = sequelize.define('ruta', {
-    id: { type: DataTypes.UUID, primaryKey: true },
+    id: { type: DataTypes.UUID, primaryKey: true,defaultValue: DataTypes.UUIDV4 },
     lugar_origen: DataTypes.UUID,
     lugar_destino: DataTypes.UUID,
     distancia_km: DataTypes.INTEGER,

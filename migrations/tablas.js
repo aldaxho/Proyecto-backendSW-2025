@@ -7,7 +7,8 @@ module.exports = {
     await queryInterface.sequelize.query(`CREATE TYPE tipo_asiento AS ENUM ('cama', 'semi_cama', 'normal');`);
 
     await queryInterface.createTable('usuario', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true,defaultValue: Sequelize.UUIDV4
+ },
       correo: { type: Sequelize.STRING, allowNull: false },
       contraseña: { type: Sequelize.STRING, allowNull: false },
       tipo_usuario: { type: 'tipo_usuario', allowNull: false },
@@ -18,13 +19,15 @@ module.exports = {
     });
 
     await queryInterface.createTable('distribucion_asientos', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true,defaultValue: Sequelize.UUIDV4
+ },
       nombre: { type: Sequelize.STRING, allowNull: false },
       cantidad_niveles: { type: Sequelize.INTEGER, allowNull: false }
     });
 
     await queryInterface.createTable('nivel_distribucion', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true,defaultValue: Sequelize.UUIDV4
+ },
       distribucion_asientos_id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -37,7 +40,8 @@ module.exports = {
     });
 
     await queryInterface.createTable('asiento', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true,defaultValue: Sequelize.UUIDV4
+ },
       nivel_distribucion_id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -53,7 +57,8 @@ module.exports = {
     });
 
     await queryInterface.createTable('bus', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true,defaultValue: Sequelize.UUIDV4
+ },
       placa: { type: Sequelize.STRING, allowNull: false, unique: true },
       imagen: { type: Sequelize.STRING, allowNull: false },
       descripcion: { type: Sequelize.STRING, allowNull: false },
@@ -67,12 +72,14 @@ module.exports = {
     });
 
     await queryInterface.createTable('lugar', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true,defaultValue: Sequelize.UUIDV4
+ },
       nombre: { type: Sequelize.STRING, allowNull: false }
     });
 
     await queryInterface.createTable('ruta', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true ,defaultValue: Sequelize.UUIDV4
+},
       lugar_origen: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -90,7 +97,8 @@ module.exports = {
     });
 
     await queryInterface.createTable('viaje', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true ,defaultValue: Sequelize.UUIDV4
+},
       bus_id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -108,7 +116,7 @@ module.exports = {
     });
 
    await queryInterface.createTable('asiento_viaje', {
-  id: { type: Sequelize.UUID, primaryKey: true },
+  id: { type: Sequelize.UUID, primaryKey: true , defaultValue: Sequelize.UUIDV4},
   asiento_id: {
     type: Sequelize.UUID,
     allowNull: false,
@@ -134,7 +142,7 @@ module.exports = {
 
 
     await queryInterface.createTable('compra_boletos', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.UUIDV4 },
       usuario_id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -152,7 +160,7 @@ module.exports = {
     });
 
     await queryInterface.createTable('boleto', {
-      id: { type: Sequelize.UUID, primaryKey: true },
+      id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.UUIDV4 },
       compra_id: {
         type: Sequelize.UUID,
         allowNull: false,

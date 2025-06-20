@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const CompraBoletos = sequelize.define('compra_boletos', {
-    id: { type: DataTypes.UUID, primaryKey: true },
+    id: { type: DataTypes.UUID, primaryKey: true,defaultValue: DataTypes.UUIDV4 },
     usuario_id: DataTypes.UUID,
     viaje_id: DataTypes.UUID,
     monto_total: DataTypes.DECIMAL(10, 2),

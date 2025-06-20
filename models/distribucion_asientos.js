@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const DistribucionAsientos = sequelize.define('distribucion_asientos', {
-    id: { type: DataTypes.UUID, primaryKey: true },
+    id: { type: DataTypes.UUID, primaryKey: true,defaultValue: DataTypes.UUIDV4 },
     nombre: DataTypes.STRING,
     cantidad_niveles: DataTypes.INTEGER
   }, {

@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Lugar = sequelize.define('lugar', {
-    id: { type: DataTypes.UUID, primaryKey: true },
+    id: { type: DataTypes.UUID, primaryKey: true ,defaultValue: DataTypes.UUIDV4 },
     nombre: DataTypes.STRING
   }, {
     tableName: 'lugar',

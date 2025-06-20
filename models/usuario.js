@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Usuario = sequelize.define('usuario', {
-    id: { type: DataTypes.UUID, primaryKey: true },
+    id: { type: DataTypes.UUID, primaryKey: true,defaultValue: DataTypes.UUIDV4},
     correo: DataTypes.STRING,
     contraseña: DataTypes.STRING,
     tipo_usuario: DataTypes.ENUM('administrador', 'controlador_abordaje', 'pasajero'),
