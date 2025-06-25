@@ -1,6 +1,6 @@
 const db = require('../models');
 const { v4: uuidv4 } = require('uuid');
-
+const QRCode = require('qrcode');
 exports.create = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
@@ -77,5 +77,36 @@ exports.getByUsuario = async (req, res) => {
     res.json(boletos);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener tus boletos' });
+  }
+};
+exports.generarBoletosConQR = async (req, res) => {
+  try {
+    const { compra_id, asientos, precio, datosPasajeros } = req.body;
+
+    const boletosCreados = [];
+
+    for (let i = 0; i < asientos.length; i++) {
+      const nuevoBoleto = await db.boleto.create({
+        id: uuidv4(),
+        compra_id,
+        asiento_id: asientos[i],
+        precio,
+        pasajero_ci: datosPasajeros[i].ci,
+        pasajero_nombre: datosPasajeros[i].nombre,
+        pasajero_fecha_nacimiento: datosPasajeros[i].fecha_nacimiento
+      });
+
+      const qrData = `boleto_id:${nuevoBoleto.id}`;
+      const qrImage = await QRCode.toDataURL(qrData);
+
+      // Actualiza el boleto con el QR
+      await nuevoBoleto.update({ qr: qrImage });
+
+      boletosCreados.push(nuevoBoleto);
+    }
+
+    res.status(201).json(boletosCreados);
+  } catch (err) {
+    res.status(500).json({ error: 'Error generando boletos con QR', detalle: err.message });
   }
 };

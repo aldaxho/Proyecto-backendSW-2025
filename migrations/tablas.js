@@ -156,7 +156,8 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       monto_total: { type: Sequelize.DECIMAL(10,2), allowNull: false },
-      fecha: { type: Sequelize.DATE, allowNull: false }
+      fecha: { type: Sequelize.DATE, allowNull: false },
+      qr: Sequelize.STRING
     });
 
     await queryInterface.createTable('boleto', {
@@ -176,7 +177,8 @@ module.exports = {
       precio: { type: Sequelize.DECIMAL(10,2), allowNull: false },
       pasajero_ci: { type: Sequelize.STRING, allowNull: false },
       pasajero_nombre: { type: Sequelize.STRING, allowNull: false },
-      pasajero_fecha_nacimiento: { type: Sequelize.DATEONLY, allowNull: false }
+      pasajero_fecha_nacimiento: { type: Sequelize.DATEONLY, allowNull: false },
+      qr: Sequelize.STRING
     });
   },
 

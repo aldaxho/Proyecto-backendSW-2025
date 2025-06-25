@@ -1,5 +1,5 @@
 const db = require('../models');
-
+const QRCode = require('qrcode');
 exports.historialPorUsuario = async (req, res) => {
   try {
     const compras = await db.compra_boletos.findAll({
@@ -57,5 +57,50 @@ exports.cancelarCompra = async (req, res) => {
   } catch (err) {
     await t.rollback();
     res.status(500).json({ error: 'Error al cancelar compra', detalle: err.message });
+  }
+};
+
+exports.realizarCompra = async (req, res) => {
+  const t = await db.sequelize.transaction();
+
+  try {
+    const { usuario_id, viaje_id, boletos } = req.body;
+
+    const compra = await db.compra_boletos.create({
+      id: uuidv4(),
+      usuario_id,
+      viaje_id,
+      monto_total: boletos.reduce((sum, b) => sum + b.precio, 0),
+      fecha: new Date()
+    }, { transaction: t });
+
+    for (const b of boletos) {
+      await db.boleto.create({
+        id: uuidv4(),
+        compra_id: compra.id,
+        asiento_id: b.asiento_id,
+        precio: b.precio,
+        pasajero_ci: b.pasajero_ci,
+        pasajero_nombre: b.pasajero_nombre,
+        pasajero_fecha_nacimiento: b.pasajero_fecha_nacimiento
+      }, { transaction: t });
+
+      await db.asiento_viaje.update(
+        { disponible: false },
+        { where: { asiento_id: b.asiento_id, viaje_id }, transaction: t }
+      );
+    }
+
+    // 📌 Aquí generas el QR
+    const qrTexto = `compra_id:${compra.id}`;
+    const qrCompra = await QRCode.toDataURL(qrTexto);
+    await compra.update({ qr: qrCompra }, { transaction: t });
+
+    await t.commit();
+    res.status(201).json({ mensaje: 'Compra realizada', compra_id: compra.id, qr: qrCompra });
+
+  } catch (err) {
+    await t.rollback();
+    res.status(500).json({ error: 'Error al realizar la compra', detalle: err.message });
   }
 };

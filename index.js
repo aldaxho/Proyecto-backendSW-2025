@@ -15,6 +15,7 @@ app.use('/api/rutas', require('./routes/ruta.routes'));
 app.use('/api/buses', require('./routes/bus.routes')); 
 app.use('/api/asiento-viaje', require('./routes/asientoViaje.routes')); 
 app.use('/api/distribucion', require('./routes/distribucion.routes')); 
+app.use('/api', require('./routes/analisisIA.routes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));

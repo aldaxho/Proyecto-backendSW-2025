@@ -17,6 +17,8 @@ git clone <repo>
 cd backend
 npm install
 npm install cors
+npm install qrcode
+
 ```
 
 ### Configura `.env`

@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
     precio: DataTypes.DECIMAL(10, 2),
     pasajero_ci: DataTypes.STRING,
     pasajero_nombre: DataTypes.STRING,
-    pasajero_fecha_nacimiento: DataTypes.DATEONLY
+    pasajero_fecha_nacimiento: DataTypes.DATEONLY,
+    qr: DataTypes.STRING
   }, {
     tableName: 'boleto',
     timestamps: false
