@@ -65,3 +65,14 @@ exports.crearDistribucionDemo = async (req, res) => {
     res.status(500).json({ error: 'Error al crear la distribución', detalle: err.message });
   }
 };
+
+
+exports.getAll = async (req, res) => {
+  try {
+    const distribuciones = await db.distribucion_asientos.findAll();
+    res.json(distribuciones);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener las distribuciones', detalle: error.message });
+  }
+};
+
