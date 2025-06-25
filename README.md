@@ -20,7 +20,8 @@ npm install cors
 npm install qrcode
 npm install axios
 npm install @google/generative-ai
-
+npm install openai multer
+npm install dayjs
 
 ```
 
