@@ -1,9 +1,9 @@
-// routes/analisisIA.routes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const controller = require('../controllers/analisisIA.controller');
 
-router.post('/analizar-viaje', controller.analizarViaje);
-router.post('/recomendar', controller.analizarYRecomendarViajes);
+const { analizarYRecomendarViajes } = require("../controllers/analisisIA.controller");
+
+// Endpoint POST para análisis con IA
+router.post("/analizar", analizarYRecomendarViajes);
 
 module.exports = router;

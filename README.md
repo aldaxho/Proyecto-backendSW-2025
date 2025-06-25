@@ -18,6 +18,9 @@ cd backend
 npm install
 npm install cors
 npm install qrcode
+npm install axios
+npm install @google/generative-ai
+
 
 ```
 

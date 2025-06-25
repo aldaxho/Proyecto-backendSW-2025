@@ -1,141 +1,188 @@
-// controllers/analisisIA.controller.js
 const { OpenAI } = require("openai");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Utilidades para prompts
-function generarPromptFeriado(origen, destino, fecha) {
-  return `Consulta si el día "${fecha}" en Bolivia es feriado o tiene algún evento importante que afecte los viajes entre "${origen}" y "${destino}". Responde con:
-
-- ¿Es feriado? Sí/No
-- ¿Qué se celebra?
-- ¿Afecta el transporte? ¿Cómo?`;
+const db = require('../models');
+//const { consultarNoticiasLugar, verificarFeriadoFecha } = require('../utils/geminiHelper'); // Gemini
+const { preguntarAGemini } = require('../utils/geminiHelper');
+// PROMPTS fallback
+function generarPromptFeriadoFallback(origen, destino, fecha) {
+  return `Aunque no hay datos confirmados de feriado para el ${fecha}, evalúa si podría haber afectaciones comunes en la ruta ${origen} - ${destino} ese día, como tráfico o eventos. Sé realista y breve.`;
 }
 
-function generarPromptSituacion(origen, destino, fecha, hora) {
-  return `Revisa si hay bloqueos, conflictos sociales, protestas o problemas de seguridad en Bolivia para un viaje desde "${origen}" hasta "${destino}" el día "${fecha}" a las "${hora}". Evalúa si es seguro viajar o si debería evitarse.`;
+function generarPromptSituacionFallback(origen, destino, fecha) {
+  return `No hay noticias recientes disponibles. Considera posibles factores generales que podrían afectar un viaje de ${origen} a ${destino} el ${fecha}, como clima, protestas, o estado de las carreteras. Sé realista, no inventes, pero ofrece una evaluación lógica.`;
+}
+
+// PROMPTS principales
+function generarPromptFeriado(origen, destino, fecha, feriadoTexto) {
+  return `El ${fecha} es feriado en Bolivia: ${feriadoTexto}. ¿Puede haber demoras o interrupciones en la ruta ${origen} - ${destino}? Responde brevemente.`;
+}
+
+function generarPromptSituacion(origen, destino, fecha, resumenGemini) {
+  return `
+Noticias recientes:
+${resumenGemini}
+¿Hay algún riesgo para viajar de ${origen} a ${destino} el ${fecha}? Responde directo.`;
 }
 
 function generarPromptRecomendacion(viaje) {
-  return `Se están evaluando varios viajes. Este viaje tiene los siguientes datos:
-
-- Origen: ${viaje.origen}
-- Destino: ${viaje.destino}
-- Fecha: ${viaje.fecha}
-- Hora de salida: ${viaje.hora_salida}
-- Hora de llegada: ${viaje.hora_llegada}
-- Precio: ${viaje.precio}
-
-Con base en eso, dime:
-
-- ¿Vale la pena este viaje?
-- ¿Está barato, justo o caro?
-- ¿Qué ventajas o desventajas ves?
-- ¿Lo recomendarías? ¿Por qué?`;
+  return `Evaluar viaje: Origen: ${viaje.origen}, Destino: ${viaje.destino}, Fecha: ${viaje.fecha}, Sale: ${viaje.hora_salida}, Llega: ${viaje.hora_llegada}, Precio: ${viaje.precio}.
+¿Es recomendable este viaje en base a precio y horario? Responde sí o no con una frase.`;
 }
 
-// ✅ Función correcta
 async function consultarIA(prompt) {
   const completion = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4", // Puedes cambiar por "gpt-3.5-turbo" si no tienes acceso
     messages: [{ role: "user", content: prompt }]
   });
-
   return completion.choices[0].message.content;
 }
 
-// Controlador principal
-exports.analizarViaje = async (req, res) => {
-  try {
-    const { origen, destino, fecha, hora_salida, hora_llegada, precio } = req.body;
-
-    const promptFeriado = generarPromptFeriado(origen, destino, fecha);
-    const promptSituacion = generarPromptSituacion(origen, destino, fecha, hora_salida);
-    const promptRecomendacion = generarPromptRecomendacion({ origen, destino, fecha, hora_salida, hora_llegada, precio });
-
-    const [feriado, situacion, recomendacion] = await Promise.all([
-      consultarIA(promptFeriado),
-      consultarIA(promptSituacion),
-      consultarIA(promptRecomendacion)
-    ]);
-
-    res.json({ feriado, situacion, recomendacion });
-  } catch (err) {
-    console.error("Error al analizar viaje:", err);
-    res.status(500).json({ error: "Error al analizar el viaje con IA" });
-  }
-};
-
+// ✅ CONTROLADOR PRINCIPAL
+// ✅ CONTROLADOR PRINCIPAL MEJORADO Y REFACTORIZADO
+// ✅ CONTROLADOR FINAL Y DEFINITIVO
 exports.analizarYRecomendarViajes = async (req, res) => {
   try {
     const { viaje_id } = req.body;
 
-    // Traer el viaje específico
     const viajeActual = await db.viaje.findByPk(viaje_id, {
-      include: [
-        {
-          model: db.ruta,
-          include: ['origen', 'destino']
-        }
-      ]
+      include: [{
+        model: db.ruta, // Sin 'as', dejamos que Sequelize haga lo que quiera
+        include: [
+          { model: db.lugar, as: 'origen' },
+          { model: db.lugar, as: 'destino' }
+        ]
+      }]
     });
 
     if (!viajeActual) {
       return res.status(404).json({ error: "Viaje no encontrado" });
     }
 
-    const origen = viajeActual.ruta.origen.nombre;
-    const destino = viajeActual.ruta.destino.nombre;
-    const fecha = viajeActual.hora_salida.toISOString().split('T')[0];
-    const hora_salida = viajeActual.hora_salida.toTimeString().split(' ')[0];
-    const hora_llegada = viajeActual.hora_llegada.toTimeString().split(' ')[0];
+    // *** LA CORRECCIÓN ESTÁ AQUÍ ***
+    // Leemos de '.rutum' porque es lo que Sequelize está creando según el log de SQL.
+    if (!viajeActual.rutum) {
+        return res.status(404).json({ error: "Datos de la ruta no encontrados para este viaje." });
+    }
+    const origen = viajeActual.rutum.origen.nombre;
+    const destino = viajeActual.rutum.destino.nombre;
+    const rutaId = viajeActual.rutum.id;
 
-    // Calcular el precio promedio
-    const asientoViajes = await db.asiento_viaje.findAll({
-      where: { viaje_id },
+    // El resto del código continúa igual...
+    const salidaDate = new Date(viajeActual.hora_salida);
+    const llegadaDate = new Date(viajeActual.hora_llegada);
+
+    if (llegadaDate <= salidaDate) {
+      return res.status(400).json({
+        error: "Error de lógica en los datos del viaje.",
+        message: `La fecha de llegada (${llegadaDate.toISOString()}) no puede ser anterior o igual a la fecha de salida (${salidaDate.toISOString()}).`
+      });
+    }
+
+    const opcionesDeFormato = { timeZone: 'America/La_Paz', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+    
+    const resultadoPrecio = await db.asiento_viaje.findOne({
+        where: { viaje_id },
+        attributes: [[db.Sequelize.fn('AVG', db.Sequelize.col('precio')), 'precioPromedio']],
+        raw: true
     });
-    const precio = asientoViajes.length > 0
-      ? asientoViajes.reduce((sum, a) => sum + parseFloat(a.precio), 0) / asientoViajes.length
-      : 0;
+    const precioPromedio = parseFloat(resultadoPrecio.precioPromedio) || 0;
+    
+    const viajeParaAnalisis = {
+      origen,
+      destino,
+      fecha_salida: salidaDate.toLocaleString('es-BO', opcionesDeFormato),
+      fecha_llegada: llegadaDate.toLocaleString('es-BO', opcionesDeFormato),
+      precio: precioPromedio
+    };
+    
+    const prompt = generarPromptMaestro(viajeParaAnalisis);
+    const analisisIA = await preguntarAGemini(prompt);
 
-    // Prompts
-    const promptFeriado = generarPromptFeriado(origen, destino, fecha);
-    const promptSituacion = generarPromptSituacion(origen, destino, fecha, hora_salida);
-    const promptRecomendacion = generarPromptRecomendacion({ origen, destino, fecha, hora_salida, hora_llegada, precio });
-
-    // Prompts paralelos
-    const [feriado, situacion, recomendacion] = await Promise.all([
-      consultarIA(promptFeriado),
-      consultarIA(promptSituacion),
-      consultarIA(promptRecomendacion)
-    ]);
-
-    // ✅ Otras opciones de viaje similares
+    if (analisisIA.error) {
+        return res.status(503).json({ error: "El servicio de análisis de IA no está disponible.", details: analisisIA.message });
+    }
+    
     const otrasOpciones = await db.viaje.findAll({
       where: {
-        ruta_id: viajeActual.ruta_id,
+        ruta_id: rutaId,
         id: { [db.Sequelize.Op.ne]: viaje_id }
       },
       include: [db.bus]
     });
-
-    // Simplificar respuesta de otras opciones
     const alternativas = otrasOpciones.map(v => ({
-      id: v.id,
-      hora_salida: v.hora_salida,
-      hora_llegada: v.hora_llegada,
-      bus: v.bus?.placa
+        id: v.id,
+        hora_salida: new Date(v.hora_salida).toLocaleString('es-BO', opcionesDeFormato),
+        hora_llegada: new Date(v.hora_llegada).toLocaleString('es-BO', opcionesDeFormato),
+        bus: v.bus?.placa || 'No asignado'
     }));
 
     res.json({
-      viaje: { origen, destino, fecha, hora_salida, hora_llegada, precio },
-      feriado,
-      situacion,
-      recomendacion,
-      alternativas
+        viaje_evaluado: viajeParaAnalisis,
+        analisis_ia: analisisIA,
+        alternativas
     });
 
   } catch (err) {
-    console.error("Error en análisis IA:", err);
-    res.status(500).json({ error: "Fallo al analizar viaje y sugerencias" });
+    console.error("Error crítico en analizarYRecomendarViajes:", err);
+    res.status(500).json({ error: "Ocurrió un error inesperado.", message: err.message });
   }
 };
+
+
+// La función para generar el prompt no cambia, la incluyo por completitud
+function generarPromptMaestro(viaje) {
+  const fechaActual = new Date().toLocaleDateString('es-BO', { timeZone: 'America/La_Paz' });
+  return `
+    Eres un asistente experto en análisis de viajes por carretera en Bolivia. Tu tarea es evaluar la viabilidad y conveniencia de un viaje en bus basado en los datos proporcionados.
+    Toma en cuenta la lógica del horario, el precio promedio para esa ruta, y cualquier posible evento externo como feriados nacionales/regionales, bloqueos de carreteras, problemas climáticos o noticias relevantes para la ruta y la fecha.
+    **Datos del Viaje a Analizar:**
+    - **Origen:** ${viaje.origen}
+    - **Destino:** ${viaje.destino}
+    - **Fecha y Hora de Salida:** ${viaje.fecha_salida}
+    - **Fecha y Hora de Llegada:** ${viaje.fecha_llegada}
+    - **Precio Promedio (Bs):** ${viaje.precio.toFixed(2)}
+    - **Fecha de la consulta:** ${fechaActual}
+    **Instrucciones de Respuesta:**
+    Analiza toda la información y responde EXCLUSIVAMENTE con un objeto JSON válido, sin texto adicional antes o después del objeto. El objeto JSON debe tener la siguiente estructura exacta:
+    {
+      "es_recomendable": <boolean>,
+      "resumen_analisis": "<string con un resumen corto y directo de tu conclusión en una sola frase>",
+      "puntos_positivos": ["<array de strings con aspectos positivos>"],
+      "puntos_negativos": ["<array de strings con aspectos negativos>"],
+      "advertencias_contexto": ["<array de strings con advertencias sobre feriados, noticias, etc. Si no hay nada, el array debe estar vacío []>"]
+    }
+  `;
+}
+/**
+ * Genera un "prompt maestro" que le pide a la IA toda la información de una vez
+ * y solicita una respuesta en formato JSON.
+ * @param {object} viaje - El objeto con los datos del viaje.
+ * @returns {string} - El prompt completo para enviar a Gemini.
+ */
+function generarPromptMaestro(viaje) {
+  const fechaActual = new Date().toLocaleDateString('es-BO', { timeZone: 'America/La_Paz' });
+
+  return `
+    Eres un asistente experto en análisis de viajes por carretera en Bolivia. Tu tarea es evaluar la viabilidad y conveniencia de un viaje en bus basado en los datos proporcionados.
+    Toma en cuenta la lógica del horario, el precio promedio para esa ruta, y cualquier posible evento externo como feriados nacionales/regionales, bloqueos de carreteras, problemas climáticos o noticias relevantes para la ruta y la fecha.
+
+    **Datos del Viaje a Analizar:**
+    - **Origen:** ${viaje.origen}
+    - **Destino:** ${viaje.destino}
+    - **Fecha y Hora de Salida:** ${viaje.fecha_salida}
+    - **Fecha y Hora de Llegada:** ${viaje.fecha_llegada}
+    - **Precio Promedio (Bs):** ${viaje.precio.toFixed(2)}
+    - **Fecha de la consulta:** ${fechaActual}
+
+    **Instrucciones de Respuesta:**
+    Analiza toda la información y responde EXCLUSIVAMENTE con un objeto JSON válido, sin texto adicional antes o después del objeto. El objeto JSON debe tener la siguiente estructura exacta:
+    {
+      "es_recomendable": <boolean>,
+      "resumen_analisis": "<string con un resumen corto y directo de tu conclusión en una sola frase>",
+      "puntos_positivos": ["<array de strings con aspectos positivos, ej: 'El precio es competitivo.'>"],
+      "puntos_negativos": ["<array de strings con aspectos negativos, ej: 'El horario de llegada es muy tarde.'>"],
+      "advertencias_contexto": ["<array de strings con advertencias sobre feriados, noticias relevantes como bloqueos, mal clima, etc. Si no hay nada, devuelve un array vacío [].>"]
+    }
+  `;
+}
