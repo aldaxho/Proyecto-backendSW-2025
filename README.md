@@ -16,6 +16,7 @@ Proyecto académico para la gestión de buses, viajes y compra de boletos.
 git clone <repo>
 cd backend
 npm install
+npm install cors
 ```
 
 ### Configura `.env`

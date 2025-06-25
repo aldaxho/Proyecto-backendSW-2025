@@ -6,6 +6,7 @@ const SECRET_KEY = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
   try {
+      console.log('BODY RECIBIDO:', req.body);
     const { correo, contraseña, nombre, ci, fecha_nacimiento, tipo_usuario } = req.body;
 
     const existe = await db.usuario.findOne({ where: { correo } });
@@ -20,12 +21,14 @@ exports.register = async (req, res) => {
       nombre,
       ci,
       fecha_nacimiento,
-      tipo_usuario,
+      tipo_usuario:'pasajero',
       fecha_registro: new Date()
     });
 
+    console.log("Usuario creado:", nuevo); 
     res.status(201).json({ mensaje: 'Usuario registrado con éxito', usuario: nuevo });
   } catch (err) {
+    console.error('Error al registrar usuario:', err);
     res.status(500).json({ error: 'Error al registrar usuario', detalle: err.message });
   }
 };
