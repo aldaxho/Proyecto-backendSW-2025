@@ -150,6 +150,14 @@ npm run dev || npx nodemon
 | DELETE | `/api/compras/:compra_id`  | Cancelar una compra y liberar asientos |
 
 ---
+### :🧠 Análisis Inteligente (OpenAI)
+
+| Método | Ruta                 | Descripción                                                             |
+| ------ | -------------------- | ----------------------------------------------------------------------- |
+| POST   | `/api/analizar`   | Analiza si hay feriado, conflictos sociales y recomienda el viaje       |
+| POST   | `/api/recomendar` | Evalúa un viaje específico y recomienda opciones alternativas similares |
+
+
 
 ## 🔐 Autenticación
 
